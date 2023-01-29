@@ -1,0 +1,13 @@
+[package]
+name = "paulx-escrow-contract"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+solana-program = "1.14.13"
+thiserror = "1.0.38"
+spl-token = {version = "3.5.0", features = ["no-entrypoint"]}
+arrayref = "0.3.6"
+
+[lib]
+crate-type = ["cdylib", "lib"]
