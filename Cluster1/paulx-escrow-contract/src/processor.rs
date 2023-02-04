@@ -331,8 +331,10 @@ impl Processor {
             return Err(ProgramError::InvalidAccountData);
         }
 
-        escrow_info.unlock_time = 0;
-        escrow_info.time_out = 0;
+        // resets the unlock_time and time_out
+        let clock = Clock::get()?;
+        escrow_info.unlock_time = clock.slot + 100;
+        escrow_info.time_out = escrow_info.unlock_time + 1000;
 
         Ok(())
     }
