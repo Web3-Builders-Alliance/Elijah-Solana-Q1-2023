@@ -149,3 +149,12 @@ To create an account, it uses the CPI with the "invoke" associated function
 
 I would better match not over the "instruction_data" context itself, but a u8 passed in to determine the function to call.
 */
+
+/* QUESTIONS:
+
+1) I'm still not sure about the purpose of calling the "serialize" function at the end of the "initialize" fn. 
+I assume it serializes the "PowerStatus" instance data into a vec of bytes and updates the data of the "power" account.
+
+2) I'm also a bit confused about the mechanism that picks the fn to call in the entrypoint fn ("process_instruction"). 
+I explained my understanding of it above tho.
+*/
