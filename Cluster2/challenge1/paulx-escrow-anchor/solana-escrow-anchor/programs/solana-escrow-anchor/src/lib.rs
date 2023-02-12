@@ -71,29 +71,21 @@ pub mod solana_escrow_anchor {
         Ok(())
     }
 
-    // TODO:
-    // pub fn cancel(ctx: Context<Cancel>) -> Result<()> {
-    //     // let escrow_account = &mut ctx.accounts.escrow_account;
+    pub fn cancel(ctx: Context<Cancel>) -> Result<()> {
+        // let escrow_account = &mut ctx.accounts.escrow_account;
 
-    //     let (_vault_authority, vault_authority_bump) =
-    //         Pubkey::find_program_address(&[ESCROW_PDA_SEED], ctx.program_id);
-    //     let authority_seeds = &[&ESCROW_PDA_SEED[..], &[vault_authority_bump]];
+        let (_, bump) = Pubkey::find_program_address(&[ESCROW_PDA_SEED], &id());
+        let authority_seeds = &[&ESCROW_PDA_SEED[..], &[bump]];
 
-    //     token::transfer(
-    //         ctx.accounts
-    //             .into_transfer_to_initializer_context()
-    //             .with_signer(&[&authority_seeds[..]]),
-    //         ctx.accounts.escrow_account.expected_amount,
-    //     )?;
+        token::transfer(
+            ctx.accounts
+                .into_transfer_to_initializer_context()
+                .with_signer(&[&authority_seeds[..]]),
+            ctx.accounts.escrow_account.expected_amount,
+        )?;
 
-    //     token::close_account(
-    //         ctx.accounts
-    //             .into_close_context()
-    //             .with_signer(&[&authority_seeds[..]]),
-    //     )?;
-
-    //     Ok(())
-    // }
+        Ok(())
+    }
 
 
     pub fn reset_time_lock(ctx: Context<ResetTimeLock>) -> Result<()> {
@@ -134,34 +126,29 @@ pub struct ResetTimeLock<'info> {
     pub initializer: Signer<'info>,
     #[account(
         mut,
-        constraint = escrow_account.initializer_pubkey == initializer.key(),
-        // TODO: check if the acconut owner is this program
+        constraint = escrow_account.initializer_pubkey == initializer.key()
     )]                  
     pub escrow_account: Account<'info, Escrow>,
 }
 
-// TODO:
-// #[derive(Accounts)]
-// pub struct Cancel<'info> {
-//     #[account(mut)]
-//     pub initializer: Signer<'info>,
-//     #[account(init, payer = initializer, space = TokenAccount::LEN)]
-//     pub pda_token_account: Account<'info, TokenAccount>,
-//     #[account(mut)]
-//     pub initializer_main_account: AccountInfo<'info>,
-//     #[account(mut)]
-//     pub initializer_sent_token_account: Account<'info, TokenAccount>,
-//     #[account(mut)]
-//     pub escrow_account: Account<'info, Escrow>,
-//     #[account(address = spl_token::id())]
-//     pub token_program: AccountInfo<'info>,
-//     #[account(mut)]
-//     pub pda_account_info: AccountInfo<'info>,
-//     #[account(mut)]
-//     pub pda_token_account_info: Account<'info, TokenAccount>,
-//     #[account(address = system_program::ID)]
-//     pub system_program: AccountInfo<'info>,
-// }
+#[derive(Accounts)]
+pub struct Cancel<'info> {
+    #[account(mut)]
+    pub initializer: Signer<'info>,
+    #[account(mut)]
+    pub pda_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub token_account_authority: AccountInfo<'info>,
+    #[account(
+        mut,
+        constraint = escrow_account.initializer_pubkey == initializer.key(),
+        constraint = escrow_account.temp_token_account_pubkey == pda_token_account.key(),
+        close = initializer
+    )]
+    pub escrow_account: Account<'info, Escrow>,
+    #[account(address = spl_token::id())]
+    pub token_program: AccountInfo<'info>
+}
 
 #[derive(Accounts)]
 pub struct Exchange<'info> {
@@ -230,6 +217,17 @@ pub enum ErrorCode {
     EscrowUnlockTime,
     #[msg("Current slot is greater than timeout time")]
     EscrowTimeout,
+}
+
+impl<'info> Cancel<'info> {
+    fn into_transfer_to_initializer_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+        let cpi_accounts = Transfer {
+            from: self.pda_token_account.to_account_info().clone(),
+            to: self.initializer.to_account_info().clone(),
+            authority: self.token_account_authority.to_account_info().clone(),
+        };
+        CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
+    }
 }
 
 impl<'info> Exchange<'info> {
