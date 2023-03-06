@@ -8,7 +8,7 @@ deposit = "GWZPQsbLKGnB8rQptKGDFsZ3PtbsYPFxhXm8NyhoftbY"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "http://127.0.0.1:8899"
 wallet = "/Users/elijah/solanaDevCourse/solana-movie-frontend/SDCcPraNtvK4XPk5XASqYExWyEPrH9YAnEwm6Hcuz3U.json"
 
 [scripts]
